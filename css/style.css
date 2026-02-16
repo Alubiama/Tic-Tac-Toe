@@ -1,0 +1,214 @@
+/* Infinite Tic-Tac-Toe — Styles */
+
+:root {
+  --bg: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text: #eaeaea;
+  --hint: #8a8a9a;
+  --accent: #3390ec;
+  --btn-text: #ffffff;
+
+  --color-x: #ff6b6b;
+  --color-o: #4ecdc4;
+  --color-x-glow: rgba(255, 107, 107, 0.3);
+  --color-o-glow: rgba(78, 205, 196, 0.3);
+
+  --cell-size: min(28vw, 100px);
+  --gap: 6px;
+  --radius: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 16px 16px env(safe-area-inset-bottom, 16px);
+}
+
+/* Header */
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.status {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.turn-x { color: var(--color-x); }
+.turn-o { color: var(--color-o); }
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--hint);
+}
+
+.score-x { color: var(--color-x); }
+.score-o { color: var(--color-o); }
+.score-sep { color: var(--hint); }
+
+/* Game Area */
+#game-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+/* Board */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, var(--cell-size));
+  grid-template-rows: repeat(3, var(--cell-size));
+  gap: var(--gap);
+}
+
+/* Cells */
+.cell {
+  position: relative;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.cell:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cell.disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Pieces */
+.cell .piece {
+  font-size: calc(var(--cell-size) * 0.5);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cell .piece-x { color: var(--color-x); }
+.cell .piece-o { color: var(--color-o); }
+
+/* Fading piece indicator */
+.cell.fading .piece {
+  opacity: 0.35;
+}
+
+/* Win line highlight */
+.cell.win-cell {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cell.win-cell .piece-x { text-shadow: 0 0 20px var(--color-x-glow); }
+.cell.win-cell .piece-o { text-shadow: 0 0 20px var(--color-o-glow); }
+
+/* Threat highlight (2 in a row) */
+.cell.threat-x {
+  box-shadow: inset 0 0 12px var(--color-x-glow);
+}
+.cell.threat-o {
+  box-shadow: inset 0 0 12px var(--color-o-glow);
+}
+
+/* Win Overlay */
+.win-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius);
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.win-overlay.hidden {
+  display: none;
+}
+
+.win-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.win-text {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.win-text.winner-x { color: var(--color-x); }
+.win-text.winner-o { color: var(--color-o); }
+
+/* Button */
+.btn-primary {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--btn-text);
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+/* Footer */
+footer {
+  padding-bottom: 8px;
+}
+
+.pieces-info {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--hint);
+}
+
+.pieces-x { color: var(--color-x); opacity: 0.7; }
+.pieces-o { color: var(--color-o); opacity: 0.7; }

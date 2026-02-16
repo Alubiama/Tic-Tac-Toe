@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Infinite Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div id="status" class="status">Ход: <span id="turn-indicator" class="turn-x">X</span></div>
+      <div id="score" class="score">
+        <span class="score-x">X: <span id="score-x">0</span></span>
+        <span class="score-sep">—</span>
+        <span class="score-o">O: <span id="score-o">0</span></span>
+      </div>
+    </header>
+
+    <main id="game-area">
+      <div id="board" class="board">
+        <div class="cell" data-cell="0"></div>
+        <div class="cell" data-cell="1"></div>
+        <div class="cell" data-cell="2"></div>
+        <div class="cell" data-cell="3"></div>
+        <div class="cell" data-cell="4"></div>
+        <div class="cell" data-cell="5"></div>
+        <div class="cell" data-cell="6"></div>
+        <div class="cell" data-cell="7"></div>
+        <div class="cell" data-cell="8"></div>
+      </div>
+      <div id="win-overlay" class="win-overlay hidden">
+        <div class="win-content">
+          <div id="win-text" class="win-text"></div>
+          <button id="btn-restart" class="btn-primary">Ещё раз</button>
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer">
+      <div class="pieces-info">
+        <span class="pieces-x">X: <span id="pieces-x">0</span>/3</span>
+        <span class="pieces-o">O: <span id="pieces-o">0</span>/3</span>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
