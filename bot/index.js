@@ -5,7 +5,7 @@ import { Bot, InlineKeyboard } from 'grammy';
 
 // --- CONFIGURATION ---
 // Replace with your actual values:
-const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
+const BOT_TOKEN = process.env.BOT_TOKEN || '8315899079:AAEygXPlEZh2Ht5Xcb_rgZ1XubvbjyKE0Q8';
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://YOUR_USERNAME.github.io/Tic-Tac-Toe/';
 
 const bot = new Bot(BOT_TOKEN);
