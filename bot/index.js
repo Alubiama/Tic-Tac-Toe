@@ -4,9 +4,25 @@
 import { Bot, InlineKeyboard } from 'grammy';
 
 // --- CONFIGURATION ---
-// Replace with your actual values:
-const BOT_TOKEN = process.env.BOT_TOKEN || '8315899079:AAEygXPlEZh2Ht5Xcb_rgZ1XubvbjyKE0Q8';
+// Set BOT_TOKEN and MINI_APP_URL in .env file (see .env.example)
+import { readFileSync } from 'fs';
+
+// Load .env file
+try {
+  const env = readFileSync(new URL('../.env', import.meta.url), 'utf-8');
+  for (const line of env.split('\n')) {
+    const [key, ...val] = line.split('=');
+    if (key && val.length) process.env[key.trim()] = val.join('=').trim();
+  }
+} catch { /* .env not found — use process.env directly */ }
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://YOUR_USERNAME.github.io/Tic-Tac-Toe/';
+
+if (!BOT_TOKEN) {
+  console.error('BOT_TOKEN is not set. Create a .env file (see .env.example)');
+  process.exit(1);
+}
 
 const bot = new Bot(BOT_TOKEN);
 
