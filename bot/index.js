@@ -1,12 +1,10 @@
 // Telegram Bot for Infinite Tic-Tac-Toe
-// Minimal bot: /start command + Mini App button + inline sharing
+// /start, inline game sharing, callback queries for game URL
 
-import { Bot, InlineKeyboard } from 'grammy';
-
-// --- CONFIGURATION ---
-// Set BOT_TOKEN and MINI_APP_URL in .env file (see .env.example)
+import { Bot, InlineKeyboard, InlineQueryResultBuilder } from 'grammy';
 import { readFileSync } from 'fs';
 
+// --- CONFIGURATION ---
 // Load .env file
 try {
   const env = readFileSync(new URL('../.env', import.meta.url), 'utf-8');
@@ -18,6 +16,7 @@ try {
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://YOUR_USERNAME.github.io/Tic-Tac-Toe/';
+const GAME_SHORT_NAME = 'tictactoe';
 
 if (!BOT_TOKEN) {
   console.error('BOT_TOKEN is not set. Create a .env file (see .env.example)');
@@ -26,30 +25,32 @@ if (!BOT_TOKEN) {
 
 const bot = new Bot(BOT_TOKEN);
 
-// /start command — opens Mini App
+// /start command — send game or open Mini App
 bot.command('start', async (ctx) => {
   const startParam = ctx.match; // gameId from deep link
 
-  const keyboard = new InlineKeyboard();
-
   if (startParam) {
-    // Deep link: join existing game
-    keyboard.webApp('Присоединиться к игре', `${MINI_APP_URL}?game=${startParam}`);
-  } else {
-    // New game
-    keyboard.webApp('Играть', MINI_APP_URL);
-  }
+    // Deep link: join existing game via Mini App
+    const keyboard = new InlineKeyboard()
+      .webApp('Присоединиться к игре', `${MINI_APP_URL}?game=${startParam}`);
 
-  await ctx.reply(
-    '🎮 *Бесконечные крестики\\-нолики*\n\n' +
-    'Поле 3×3, но у каждого игрока максимум 3 фигуры\\.\n' +
-    'При постановке 4\\-й — старейшая исчезает\\!\n\n' +
-    'Ничьих не бывает — играй, пока кто\\-то не победит\\.',
-    {
-      parse_mode: 'MarkdownV2',
-      reply_markup: keyboard
-    }
-  );
+    await ctx.reply('Тебя пригласили в игру!', { reply_markup: keyboard });
+  } else {
+    // New game: send as Telegram Game
+    await ctx.replyWithGame(GAME_SHORT_NAME);
+  }
+});
+
+// Callback query from "Play" button on Game message
+bot.on('callback_query:game_short_name', async (ctx) => {
+  await ctx.answerCallbackQuery({ url: MINI_APP_URL });
+});
+
+// Inline mode: share game into any chat
+bot.on('inline_query', async (ctx) => {
+  const result = InlineQueryResultBuilder.game('play-tictactoe', GAME_SHORT_NAME);
+
+  await ctx.answerInlineQuery([result], { cache_time: 0 });
 });
 
 // /help command
