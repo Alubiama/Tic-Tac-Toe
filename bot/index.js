@@ -15,7 +15,7 @@ try {
 } catch { /* .env not found — use process.env directly */ }
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const MINI_APP_URL = process.env.MINI_APP_URL || 'https://YOUR_USERNAME.github.io/Tic-Tac-Toe/';
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://alubiama.github.io/Tic-Tac-Toe/';
 const GAME_SHORT_NAME = 'tictactoe';
 
 if (!BOT_TOKEN) {
