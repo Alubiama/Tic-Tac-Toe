@@ -16,7 +16,7 @@ try {
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://alubiama.github.io/Tic-Tac-Toe/';
-const GAME_SHORT_NAME = 'tictactoe';
+const GAME_SHORT_NAME = 'inftictactoe';
 
 if (!BOT_TOKEN) {
   console.error('BOT_TOKEN is not set. Create a .env file (see .env.example)');
