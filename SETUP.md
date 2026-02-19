@@ -1,125 +1,191 @@
-# Настройка Infinite Tic-Tac-Toe
+# Infinite Tic-Tac-Toe Setup
 
-## 1. Создание Telegram-бота
+## 🚀 Быстрый старт
 
-1. Открой [@BotFather](https://t.me/BotFather) в Telegram
+### 1. Создание Telegram-бота
+
+1. Открой [@BotFather](https://t.me/BotFather)
 2. Отправь `/newbot`
-3. Введи имя бота (например: `Infinite TicTacToe`)
-4. Введи username бота (например: `InfTicTacToeBot`)
-5. Скопируй **токен** — он понадобится дальше
+3. Введи имя и username бота
+4. Скопируй **токен**
 
-### Настройка Mini App в BotFather
+### 2. Настройка Mini App
 
-1. Отправь `/mybots` → выбери своего бота
-2. `Bot Settings` → `Menu Button` → задай:
-   - URL: `https://YOUR_USERNAME.github.io/Tic-Tac-Toe/`
-   - Текст: `Играть`
-3. `Bot Settings` → `Configure Mini App`:
-   - URL: `https://YOUR_USERNAME.github.io/Tic-Tac-Toe/`
+В BotFather:
+```
+/mybots → выбери бота → Bot Settings → Menu Button
+```
+- URL: `https://YOUR_USERNAME.github.io/Tic-Tac-Toe/`
+- Текст: `🎮 Играть`
 
-## 2. Деплой фронтенда (GitHub Pages)
-
-1. Запушь репозиторий на GitHub
-2. Перейди в `Settings` → `Pages`
-3. Source: `Deploy from a branch`
-4. Branch: `main` (или `master`), папка: `/ (root)`
-5. Нажми `Save`
-6. Через 1-2 минуты сайт будет доступен по адресу:
-   `https://YOUR_USERNAME.github.io/Tic-Tac-Toe/`
-
-## 3. Запуск бота (локально для тестирования)
+### 3. Деплой на GitHub Pages
 
 ```bash
-cd bot
-npm install
-BOT_TOKEN=your_token_here MINI_APP_URL=https://YOUR_USERNAME.github.io/Tic-Tac-Toe/ npm start
+git clone https://github.com/YOUR_USERNAME/Tic-Tac-Toe.git
+cd Tic-Tac-Toe
 ```
 
-## 4. Деплой бота на Vercel (продакшен)
+1. Push на GitHub
+2. Settings → Pages
+3. Source: Deploy from branch `main`
+4. Через минуту доступно по адресу `https://YOUR_USERNAME.github.io/Tic-Tac-Toe/`
 
-### Подготовка
+---
 
-1. Зарегистрируйся на [vercel.com](https://vercel.com)
-2. Установи Vercel CLI: `npm i -g vercel`
+## 🔥 Мультиплеер (Firebase)
 
-### Конвертация в webhook-режим
+Для онлайн-игр нужен Firebase Realtime Database.
 
-Для продакшена бот должен работать через webhook, а не polling.
-Создай файл `bot/api/webhook.js`:
+### 1. Создай проект Firebase
 
-```js
-import { Bot, webhookCallback } from 'grammy';
+1. [console.firebase.google.com](https://console.firebase.google.com)
+2. **Add project** → имя: `infinite-tictactoe`
+3. Отключи Google Analytics
+4. **Create project**
 
-const bot = new Bot(process.env.BOT_TOKEN);
-// ... (перенеси обработчики из index.js)
+### 2. Включи Realtime Database
 
-export default webhookCallback(bot, 'std/http');
-```
+1. Build → Realtime Database
+2. Create Database
+3. Регион: `europe-west1`
+4. Правила: **Start in test mode**
 
-### Деплой
+### 3. Получи конфиг
 
-```bash
-cd bot
-vercel --prod
-```
-
-### Установка webhook
-
-```bash
-curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://your-bot.vercel.app/api/webhook"
-```
-
-## 5. Firebase (для мультиплеера — следующая итерация)
-
-### Создание проекта
-
-1. Перейди на [console.firebase.google.com](https://console.firebase.google.com)
-2. `Add project` → введи имя (например: `infinite-tictactoe`)
-3. Отключи Google Analytics (не нужен для MVP)
-4. `Create project`
-
-### Включение Realtime Database
-
-1. В консоли Firebase: `Build` → `Realtime Database`
-2. `Create Database`
-3. Регион: `europe-west1` (или ближайший)
-4. Правила: `Start in test mode` (для MVP)
-
-### Получение конфига
-
-1. `Project settings` (шестерёнка) → `General`
-2. `Your apps` → `Web` (иконка `</>`)
+1. Project settings (шестерёнка) → General
+2. Your apps → Web (иконка `</>`)
 3. Зарегистрируй приложение
-4. Скопируй объект `firebaseConfig`:
+4. Скопируй `firebaseConfig`
 
-```js
-const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "...",
-  databaseURL: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
-};
+### 4. Настрой игру
+
+Открой `setup-firebase.html` в браузере или создай `js/config.js`:
+
+```javascript
+window.FIREBASE_API_KEY = "AIzaSy...";
+window.FIREBASE_AUTH_DOMAIN = "your-project.firebaseapp.com";
+window.FIREBASE_DATABASE_URL = "https://your-project.firebaseio.com";
+window.FIREBASE_PROJECT_ID = "your-project";
+window.FIREBASE_STORAGE_BUCKET = "your-project.appspot.com";
+window.FIREBASE_MESSAGING_SENDER_ID = "123456789";
+window.FIREBASE_APP_ID = "1:123456789:web:abc123";
 ```
 
-5. Этот конфиг будет использован в `js/multiplayer.js`
+⚠️ **Не коммить config.js в репозиторий!**
 
-### Security Rules (продакшен)
+Добавь в `.gitignore`:
+```
+js/config.js
+.env
+```
+
+### 5. Security Rules (продакшен)
+
+В Firebase Console → Realtime Database → Rules:
 
 ```json
 {
   "rules": {
-    "games": {
-      "$gameId": {
+    "rooms": {
+      "$roomId": {
         ".read": true,
-        ".write": true,
-        "moves": {
-          ".validate": "newData.isString() || newData.hasChildren()"
-        }
+        ".write": true
       }
     }
   }
 }
 ```
+
+---
+
+## 🤖 Запуск бота
+
+### Локально
+
+```bash
+cd bot
+npm install
+cp ../.env.example .env
+# Отредактируй .env
+npm start
+```
+
+### Vercel (продакшен)
+
+```bash
+npm i -g vercel
+cd bot
+vercel --prod
+```
+
+Установка webhook:
+```bash
+curl "https://api.telegram.org/botYOUR_TOKEN/setWebhook?url=https://your-bot.vercel.app/api/webhook"
+```
+
+---
+
+## 📁 Структура проекта
+
+```
+Tic-Tac-Toe/
+├── index.html          # Главная страница
+├── setup-firebase.html # Помощник настройки Firebase
+├── css/
+│   ├── style.css       # Основные стили
+│   └── animations.css  # Анимации
+├── js/
+│   ├── app.js          # Точка входа
+│   ├── game.js         # Логика игры
+│   ├── board.js        # Рендеринг
+│   ├── ai.js           # ИИ противник
+│   ├── telegram.js     # Telegram SDK
+│   ├── firebase.js     # Firebase интеграция
+│   ├── multiplayer.js  # Мультиплеер логика
+│   └── config.js       # Firebase конфиг (не коммитить!)
+└── bot/
+    ├── index.js        # Telegram бот
+    └── package.json
+```
+
+---
+
+## 🎮 Режимы игры
+
+| Режим | Описание |
+|-------|----------|
+| 🤖 С бот | Игра против AI с адаптивной сложностью |
+| 👥 Онлайн | Мультиплеер через Firebase |
+| 🔗 Быстрый матч | Автоматический поиск соперника |
+| 🏠 Комната | Создать/войти в комнату по коду |
+
+---
+
+## 🧪 Тестирование
+
+1. Открой `index.html` локально (нужен сервер для ES модулей)
+2. Или используй Live Server в VS Code
+3. Для мультиплеера нужен Firebase
+
+```bash
+# Простой сервер
+npx serve .
+```
+
+---
+
+## 📱 Telegram интеграция
+
+Игра автоматически:
+- Получает тему Telegram (светлая/тёмная)
+- Использует haptic feedback
+- Растягивается на весь экран
+- Получает данные пользователя
+
+---
+
+## 🔗 Ссылки
+
+- [Telegram Web Apps Docs](https://core.telegram.org/bots/webapps)
+- [Firebase Realtime Database](https://firebase.google.com/docs/database)
+- [grammY Docs](https://grammy.dev)

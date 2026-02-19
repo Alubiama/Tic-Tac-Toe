@@ -1,72 +1,249 @@
-// Infinite Tic-Tac-Toe — Entry Point
-
 import { createGame, makeMove, resetGame, isValidMove } from './game.js';
-import { initBoard, renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
-import { initTelegram, hapticPlace, hapticWin, hapticLose, hapticInvalid, hapticTap } from './telegram.js';
+import { initBoard, renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate, showModeSelector } from './board.js';
+import { initTelegram, hapticPlace, hapticWin, hapticLose, hapticInvalid, hapticTap, getUser } from './telegram.js';
 import { getAiMove } from './ai.js';
+import { 
+  initMultiplayer, 
+  createMultiplayerGame, 
+  joinMultiplayerGame, 
+  quickMatch,
+  makeMove as multiplayerMove,
+  restartMultiplayerGame,
+  getMode, 
+  isMyTurn,
+  getMySymbol,
+  cleanup,
+  MODE_SINGLE,
+  MODE_MULTI
+} from './multiplayer.js';
 
 const AI_PLAYER = 'O';
 const HUMAN_PLAYER = 'X';
-const AI_DELAY = 400; // ms — feels natural, not instant
+const AI_DELAY = 400;
 
 let game = createGame();
 let aiThinking = false;
+let currentMode = MODE_SINGLE;
 
 function init() {
   initTelegram();
   initBoard(handleCellClick);
-
-  // Restart button
+  initMultiplayer();
+  
   document.getElementById('btn-restart').addEventListener('click', () => {
     hapticTap();
     restartGame();
   });
-
+  
+  document.getElementById('btn-mode-single').addEventListener('click', () => {
+    hapticTap();
+    setMode(MODE_SINGLE);
+  });
+  
+  document.getElementById('btn-mode-multi').addEventListener('click', () => {
+    hapticTap();
+    showMultiplayerOptions();
+  });
+  
+  document.getElementById('btn-create-room').addEventListener('click', async () => {
+    hapticTap();
+    hideModal('modal-multiplayer');
+    await handleCreateRoom();
+  });
+  
+  document.getElementById('btn-quick-match').addEventListener('click', async () => {
+    hapticTap();
+    hideModal('modal-multiplayer');
+    await handleQuickMatch();
+  });
+  
+  document.getElementById('btn-join-room').addEventListener('click', () => {
+    hapticTap();
+    showJoinRoomInput();
+  });
+  
+  document.getElementById('btn-join-confirm').addEventListener('click', async () => {
+    hapticTap();
+    const roomId = document.getElementById('input-room-id').value.trim();
+    if (roomId) {
+      hideModal('modal-join-room');
+      await handleJoinRoom(roomId);
+    }
+  });
+  
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      hapticTap();
+      btn.closest('.modal').classList.add('hidden');
+    });
+  });
+  
   renderBoard(game);
+  updateModeUI();
+}
+
+function setMode(mode) {
+  if (mode === MODE_MULTI) {
+    showMultiplayerOptions();
+    return;
+  }
+  
+  currentMode = MODE_SINGLE;
+  cleanup();
+  game = createGame();
+  renderBoard(game);
+  updateModeUI();
+}
+
+function updateModeUI() {
+  const singleBtn = document.getElementById('btn-mode-single');
+  const multiBtn = document.getElementById('btn-mode-multi');
+  const turnEl = document.getElementById('status');
+  
+  if (currentMode === MODE_SINGLE) {
+    singleBtn.classList.add('active');
+    multiBtn.classList.remove('active');
+    turnEl.innerHTML = `Ход: <span id="turn-indicator" class="turn-${game.currentPlayer.toLowerCase()}">${game.currentPlayer}</span>`;
+  } else {
+    singleBtn.classList.remove('active');
+    multiBtn.classList.add('active');
+    
+    const mySym = getMySymbol();
+    const isMy = isMyTurn();
+    turnEl.innerHTML = isMy 
+      ? `<span class="my-turn">Твой ход (${mySym})</span>`
+      : `<span class="opponent-turn">Ход соперника...</span>`;
+  }
+}
+
+function showMultiplayerOptions() {
+  document.getElementById('modal-multiplayer').classList.remove('hidden');
+}
+
+function showJoinRoomInput() {
+  hideModal('modal-multiplayer');
+  document.getElementById('modal-join-room').classList.remove('hidden');
+  document.getElementById('input-room-id').focus();
+}
+
+function hideModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}
+
+async function handleCreateRoom() {
+  const roomId = await createMultiplayerGame();
+  if (roomId) {
+    currentMode = MODE_MULTI;
+    showRoomInfo(roomId);
+    updateModeUI();
+  }
+}
+
+async function handleQuickMatch() {
+  showLoading('Поиск соперника...');
+  const foundRoomId = await quickMatch();
+  hideLoading();
+  
+  if (foundRoomId) {
+    currentMode = MODE_MULTI;
+    updateModeUI();
+  } else {
+    alert('Не удалось найти игру. Попробуйте создать комнату.');
+  }
+}
+
+async function handleJoinRoom(roomId) {
+  showLoading('Подключение...');
+  const joined = await joinMultiplayerGame(roomId);
+  hideLoading();
+  
+  if (joined) {
+    currentMode = MODE_MULTI;
+    updateModeUI();
+  }
+}
+
+function showRoomInfo(roomId) {
+  document.getElementById('room-id-display').textContent = roomId;
+  document.getElementById('modal-room-info').classList.remove('hidden');
+  
+  document.getElementById('btn-copy-room').onclick = () => {
+    const shareUrl = `https://t.me/share/url?url=https://t.me/yourbot?start=game_${roomId}&text=Играй со мной в Infinite Tic-Tac-Toe!`;
+    window.Telegram?.WebApp?.openTelegramLink(shareUrl);
+    hapticTap();
+  };
+  
+  document.getElementById('btn-close-room-info').onclick = () => {
+    hideModal('modal-room-info');
+    hapticTap();
+  };
+}
+
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('modal-loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('modal-loading').classList.add('hidden');
 }
 
 function handleCellClick(cellIndex) {
-  // Ignore clicks during AI turn or if game is over
+  if (currentMode === MODE_MULTI) {
+    handleMultiplayerClick(cellIndex);
+    return;
+  }
+  
+  handleSingleplayerClick(cellIndex);
+}
+
+function handleSingleplayerClick(cellIndex) {
   if (aiThinking) return;
   if (game.winner) return;
   if (game.currentPlayer !== HUMAN_PLAYER) return;
-
-  // Validate move
+  
   if (!isValidMove(game.moves, game.currentPlayer, cellIndex)) {
     hapticInvalid();
     return;
   }
-
-  // Make human move
+  
   game = makeMove(game, cellIndex);
   hapticPlace();
   renderBoard(game);
-
+  
   if (game.winner) {
     handleWin(game.winner);
     return;
   }
-
-  // AI's turn
+  
   scheduleAiMove();
+}
+
+function handleMultiplayerClick(cellIndex) {
+  if (!isMyTurn()) {
+    hapticInvalid();
+    return;
+  }
+  
+  multiplayerMove(cellIndex);
 }
 
 function scheduleAiMove() {
   aiThinking = true;
-
+  
   setTimeout(() => {
     const aiCell = getAiMove(game.moves, AI_PLAYER);
     if (aiCell === null) {
       aiThinking = false;
       return;
     }
-
+    
     game = makeMove(game, aiCell);
     hapticTap();
     renderBoard(game);
-
+    
     aiThinking = false;
-
+    
     if (game.winner) {
       handleWin(game.winner);
     }
@@ -79,20 +256,22 @@ function handleWin(winner) {
   } else {
     hapticLose();
   }
-
+  
   animateScoreUpdate(winner);
-
-  // Slight delay before showing overlay so player sees the winning board
+  
   setTimeout(() => {
     showWinOverlay(winner);
   }, 500);
 }
 
 function restartGame() {
-  game = resetGame(game);
-  hideWinOverlay();
-  renderBoard(game);
+  if (currentMode === MODE_MULTI) {
+    restartMultiplayerGame();
+  } else {
+    game = resetGame(game);
+    hideWinOverlay();
+    renderBoard(game);
+  }
 }
 
-// Start the game
 init();

@@ -1,5 +1,3 @@
-// Board rendering and DOM interaction
-
 import { deriveBoard, getActivePieceCount, WIN_LINES } from './game.js';
 
 let onCellClick = null;
@@ -27,7 +25,6 @@ export function renderBoard(game) {
     const isWinCell = game.winLine && game.winLine.includes(i);
     const threat = threats.find(t => t.cell === i);
 
-    // Clear classes
     cellEl.className = 'cell';
     cellEl.innerHTML = '';
 
@@ -40,7 +37,6 @@ export function renderBoard(game) {
       pieceEl.className = `piece piece-${piece.toLowerCase()}`;
       pieceEl.textContent = piece;
 
-      // Check if this is a newly placed piece
       const lastMove = game.moves[game.moves.length - 1];
       if (lastMove && lastMove.cell === i && !game._rendered) {
         pieceEl.classList.add('appear');
@@ -57,42 +53,37 @@ export function renderBoard(game) {
       cellEl.classList.add('win-cell');
     }
 
-    // Show threat highlight (2 in a row — empty cell to complete)
     if (threat && !piece && !game.winner) {
       cellEl.classList.add(`threat-${threat.player.toLowerCase()}`);
     }
   });
 
-  // Update turn indicator
   const turnEl = document.getElementById('turn-indicator');
-  turnEl.textContent = game.currentPlayer;
-  turnEl.className = `turn-${game.currentPlayer.toLowerCase()}`;
+  if (turnEl) {
+    turnEl.textContent = game.currentPlayer;
+    turnEl.className = `turn-${game.currentPlayer.toLowerCase()}`;
+  }
 
-  // Update status text
   const statusEl = document.getElementById('status');
-  if (game.winner) {
-    statusEl.innerHTML = '';
-  } else {
+  if (statusEl && !statusEl.querySelector('.my-turn') && !statusEl.querySelector('.opponent-turn')) {
     statusEl.innerHTML = `Ход: <span id="turn-indicator" class="turn-${game.currentPlayer.toLowerCase()}">${game.currentPlayer}</span>`;
   }
 
-  // Update scores
   document.getElementById('score-x').textContent = game.scoreX;
   document.getElementById('score-o').textContent = game.scoreO;
 
-  // Update piece counts
   document.getElementById('pieces-x').textContent = getActivePieceCount(game.moves, 'X');
   document.getElementById('pieces-o').textContent = getActivePieceCount(game.moves, 'O');
 
-  // Mark as rendered to prevent repeat animations
   game._rendered = true;
 }
 
-export function showWinOverlay(winner) {
+export function showWinOverlay(winner, customText) {
   const overlay = document.getElementById('win-overlay');
   const winText = document.getElementById('win-text');
 
-  winText.textContent = `${winner} победил!`;
+  const text = customText || `${winner} победил!`;
+  winText.textContent = text;
   winText.className = `win-text winner-${winner.toLowerCase()} show`;
 
   overlay.classList.remove('hidden');
@@ -108,12 +99,18 @@ export function hideWinOverlay() {
 export function animateScoreUpdate(player) {
   const scoreEl = document.getElementById(`score-${player.toLowerCase()}`);
   scoreEl.classList.remove('score-pop');
-  // Force reflow to restart animation
   void scoreEl.offsetWidth;
   scoreEl.classList.add('score-pop');
 }
 
-// Find cells where a player has 2 in a row and could complete 3
+export function showModeSelector() {
+  document.getElementById('mode-selector').classList.remove('hidden');
+}
+
+export function hideModeSelector() {
+  document.getElementById('mode-selector').classList.add('hidden');
+}
+
 function findThreats(board) {
   const threats = [];
 

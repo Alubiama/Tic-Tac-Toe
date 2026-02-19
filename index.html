@@ -11,6 +11,10 @@
 <body>
   <div id="app">
     <header id="header">
+      <div id="mode-selector" class="mode-selector">
+        <button id="btn-mode-single" class="mode-btn active">С бот</button>
+        <button id="btn-mode-multi" class="mode-btn">Онлайн</button>
+      </div>
       <div id="status" class="status">Ход: <span id="turn-indicator" class="turn-x">X</span></div>
       <div id="score" class="score">
         <span class="score-x">X: <span id="score-x">0</span></span>
@@ -47,6 +51,61 @@
     </footer>
   </div>
 
+  <!-- Multiplayer Options Modal -->
+  <div id="modal-multiplayer" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Онлайн игра</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <button id="btn-quick-match" class="btn-primary btn-block">Быстрый матч</button>
+        <button id="btn-create-room" class="btn-secondary btn-block">Создать комнату</button>
+        <button id="btn-join-room" class="btn-secondary btn-block">Войти по коду</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Info Modal -->
+  <div id="modal-room-info" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Комната создана</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="room-label">Код комнаты:</p>
+        <div id="room-id-display" class="room-code">ABC123</div>
+        <p class="room-hint">Отправь код другу или поделись ссылкой</p>
+        <button id="btn-copy-room" class="btn-primary btn-block">Поделиться</button>
+        <button id="btn-close-room-info" class="btn-secondary btn-block">Жду соперника...</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Room Modal -->
+  <div id="modal-join-room" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Войти в комнату</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="input-room-id" class="input-room" placeholder="Введите код комнаты" maxlength="20">
+        <button id="btn-join-confirm" class="btn-primary btn-block">Войти</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Modal -->
+  <div id="modal-loading" class="modal hidden">
+    <div class="modal-content modal-loading">
+      <div class="spinner"></div>
+      <p id="loading-text">Загрузка...</p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

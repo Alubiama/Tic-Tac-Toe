@@ -1,0 +1,11 @@
+// Firebase Configuration
+// Copy this file to config.js and fill in your values
+// DO NOT commit config.js to git!
+
+window.FIREBASE_API_KEY = "";
+window.FIREBASE_AUTH_DOMAIN = "";
+window.FIREBASE_DATABASE_URL = "";
+window.FIREBASE_PROJECT_ID = "";
+window.FIREBASE_STORAGE_BUCKET = "";
+window.FIREBASE_MESSAGING_SENDER_ID = "";
+window.FIREBASE_APP_ID = "";

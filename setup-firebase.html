@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Firebase - Infinite Tic-Tac-Toe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eaeaea;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    h1 { color: #3390ec; margin-bottom: 20px; }
+    h2 { color: #4ecdc4; margin: 30px 0 15px; font-size: 18px; }
+    code {
+      background: #16213e;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    pre {
+      background: #16213e;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    .step {
+      background: #16213e;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      border-left: 3px solid #3390ec;
+    }
+    .note {
+      background: rgba(255, 107, 107, 0.1);
+      border-left: 3px solid #ff6b6b;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 10px 0;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      background: #1e1e36;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #eaeaea;
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #3390ec;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+      color: #4ecdc4;
+    }
+    button {
+      background: #3390ec;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+    }
+    button:active { opacity: 0.9; }
+    .success { color: #4ade80; }
+    .error { color: #ff6b6b; }
+  </style>
+</head>
+<body>
+  <h1>🔥 Firebase Setup</h1>
+  <p>Для мультиплеера нужно настроить Firebase Realtime Database</p>
+
+  <h2>1. Создай проект Firebase</h2>
+  <div class="step">
+    <ol>
+      <li>Перейди на <a href="https://console.firebase.google.com" target="_blank" style="color:#3390ec">console.firebase.google.com</a></li>
+      <li>Нажми <strong>Add project</strong></li>
+      <li>Введи имя: <code>infinite-tictactoe</code></li>
+      <li>Отключи Google Analytics (не нужен)</li>
+      <li>Нажми <strong>Create project</strong></li>
+    </ol>
+  </div>
+
+  <h2>2. Включи Realtime Database</h2>
+  <div class="step">
+    <ol>
+      <li>В консоли Firebase: <strong>Build → Realtime Database</strong></li>
+      <li>Нажми <strong>Create Database</strong></li>
+      <li>Регион: <code>europe-west1</code></li>
+      <li>Правила: <strong>Start in test mode</strong> (для разработки)</li>
+    </ol>
+  </div>
+
+  <h2>3. Получи конфиг</h2>
+  <div class="step">
+    <ol>
+      <li>Нажми на шестерёнку → <strong>Project settings</strong></li>
+      <li>Прокрути вниз до <strong>Your apps</strong></li>
+      <li>Нажми на иконку <strong>Web</strong> (&lt;/&gt;)</li>
+      <li>Введи имя: <code>tictactoe-web</code></li>
+      <li>Скопируй <code>firebaseConfig</code> объект</li>
+    </ol>
+  </div>
+
+  <h2>4. Введи данные</h2>
+  
+  <label>apiKey</label>
+  <input type="text" id="apiKey" placeholder="AIzaSy...">
+
+  <label>authDomain</label>
+  <input type="text" id="authDomain" placeholder="your-project.firebaseapp.com">
+
+  <label>databaseURL</label>
+  <input type="text" id="databaseURL" placeholder="https://your-project.firebaseio.com">
+
+  <label>projectId</label>
+  <input type="text" id="projectId" placeholder="your-project">
+
+  <label>storageBucket</label>
+  <input type="text" id="storageBucket" placeholder="your-project.appspot.com">
+
+  <label>messagingSenderId</label>
+  <input type="text" id="messagingSenderId" placeholder="123456789">
+
+  <label>appId</label>
+  <input type="text" id="appId" placeholder="1:123456789:web:abc123">
+
+  <button onclick="generateConfig()">Сгенерировать config.js</button>
+
+  <div id="result" style="margin-top: 20px;"></div>
+
+  <h2>5. Скопируй файл</h2>
+  <div class="note">
+    После генерации сохрани файл как <code>js/config.js</code> в папке проекта
+  </div>
+
+  <script>
+    function generateConfig() {
+      const config = {
+        apiKey: document.getElementById('apiKey').value,
+        authDomain: document.getElementById('authDomain').value,
+        databaseURL: document.getElementById('databaseURL').value,
+        projectId: document.getElementById('projectId').value,
+        storageBucket: document.getElementById('storageBucket').value,
+        messagingSenderId: document.getElementById('messagingSenderId').value,
+        appId: document.getElementById('appId').value
+      };
+
+      if (!config.databaseURL) {
+        document.getElementById('result').innerHTML = '<p class="error">❌ databaseURL обязателен!</p>';
+        return;
+      }
+
+      const jsContent = `// Firebase Configuration
+// Auto-generated - do not commit this file!
+
+window.FIREBASE_API_KEY = "${config.apiKey}";
+window.FIREBASE_AUTH_DOMAIN = "${config.authDomain}";
+window.FIREBASE_DATABASE_URL = "${config.databaseURL}";
+window.FIREBASE_PROJECT_ID = "${config.projectId}";
+window.FIREBASE_STORAGE_BUCKET = "${config.storageBucket}";
+window.FIREBASE_MESSAGING_SENDER_ID = "${config.messagingSenderId}";
+window.FIREBASE_APP_ID = "${config.appId}";
+`;
+
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `
+        <p class="success">✅ Конфиг сгенерирован!</p>
+        <pre>${jsContent}</pre>
+        <p>Сохрани как: <code>js/config.js</code></p>
+        <p>И добавь в index.html перед app.js:</p>
+        <pre>&lt;script src="js/config.js"&gt;&lt;/script&gt;</pre>
+      `;
+
+      // Download file
+      const blob = new Blob([jsContent], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'config.js';
+      a.click();
+    }
+  </script>
+</body>
+</html>

@@ -1,70 +1,138 @@
-// Telegram Bot for Infinite Tic-Tac-Toe
-// /start, inline game sharing, callback queries for game URL
-
-import { Bot, InlineKeyboard, InlineQueryResultBuilder } from 'grammy';
-import { readFileSync } from 'fs';
-
-// --- CONFIGURATION ---
-// Load .env file
-try {
-  const env = readFileSync(new URL('../.env', import.meta.url), 'utf-8');
-  for (const line of env.split('\n')) {
-    const [key, ...val] = line.split('=');
-    if (key && val.length) process.env[key.trim()] = val.join('=').trim();
-  }
-} catch { /* .env not found — use process.env directly */ }
+import { Bot, InlineKeyboard } from 'grammy';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const MINI_APP_URL = process.env.MINI_APP_URL || 'https://alubiama.github.io/Tic-Tac-Toe/';
-const GAME_SHORT_NAME = 'inftictactoe';
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://your-username.github.io/Tic-Tac-Toe/';
 
 if (!BOT_TOKEN) {
-  console.error('BOT_TOKEN is not set. Create a .env file (see .env.example)');
+  console.error('BOT_TOKEN is not set');
   process.exit(1);
 }
 
 const bot = new Bot(BOT_TOKEN);
 
-// /start command — send game or open Mini App
 bot.command('start', async (ctx) => {
-  const startParam = ctx.match; // gameId from deep link
+  const startParam = ctx.match;
 
-  if (startParam) {
-    // Deep link: join existing game via Mini App
+  if (startParam && startParam.startsWith('game_')) {
+    const roomId = startParam.replace('game_', '');
     const keyboard = new InlineKeyboard()
-      .webApp('Присоединиться к игре', `${MINI_APP_URL}?game=${startParam}`);
-
-    await ctx.reply('Тебя пригласили в игру!', { reply_markup: keyboard });
-  } else {
-    // New game: send as Telegram Game
-    await ctx.replyWithGame(GAME_SHORT_NAME);
+      .webApp('🎮 Присоединиться', `${MINI_APP_URL}?start=game_${roomId}`);
+    
+    await ctx.reply('🎯 Тебя пригласили в игру!', { reply_markup: keyboard });
+    return;
   }
+
+  if (startParam === 'play') {
+    await sendMainMenu(ctx, true);
+    return;
+  }
+
+  await sendMainMenu(ctx);
 });
 
-// Callback query from "Play" button on Game message
-bot.on('callback_query:game_short_name', async (ctx) => {
-  await ctx.answerCallbackQuery({ url: MINI_APP_URL });
+async function sendMainMenu(ctx, showGameButton = false) {
+  const keyboard = new InlineKeyboard()
+    .webApp('🎮 Играть', MINI_APP_URL)
+    .row()
+    .text('📖 Правила', 'rules')
+    .text('📊 Статистика', 'stats');
+
+  const text = `
+🔥 **Infinite Tic-Tac-Toe**
+
+Бесконечные крестики-нолики!
+
+• Поле 3×3
+• У каждого максимум 3 фишки  
+• 4-я фишка убирает самую старую
+• Побеждает тот, кто соберёт 3 в ряд
+
+Выбери режим:
+🤖 **Против бота** — тренировка
+👥 **Онлайн** — играй с друзьями
+  `.trim();
+
+  await ctx.reply(text, { 
+    parse_mode: 'Markdown',
+    reply_markup: keyboard 
+  });
+}
+
+bot.callbackQuery('rules', async (ctx) => {
+  const rulesText = `
+📖 **Правила игры**
+
+1️⃣ Классическое поле 3×3
+
+2️⃣ Игроки ходят по очереди (X и O)
+
+3️⃣ **Главная фишка:** у каждого игрока может быть только 3 фишки на поле
+
+4️⃣ Когда ставишь 4-ю фишку — самая старая исчезает
+
+5️⃣ Побеждает тот, кто первым соберёт 3 в ряд
+
+💡 **Стратегия:** думай наперёд! Твоя "лишняя" фишка может разрушить собственную линию.
+  `.trim();
+
+  await ctx.answerCallbackQuery();
+  await ctx.reply(rulesText, { parse_mode: 'Markdown' });
 });
 
-// Inline mode: share game into any chat
-bot.on('inline_query', async (ctx) => {
-  const result = InlineQueryResultBuilder.game('play-tictactoe', GAME_SHORT_NAME);
-
-  await ctx.answerInlineQuery([result], { cache_time: 0 });
+bot.callbackQuery('stats', async (ctx) => {
+  await ctx.answerCallbackQuery('📊 Статистика скоро будет!');
 });
 
-// /help command
+bot.command('play', async (ctx) => {
+  const keyboard = new InlineKeyboard()
+    .webApp('🎮 Открыть игру', MINI_APP_URL);
+  
+  await ctx.reply('Готов играть?', { reply_markup: keyboard });
+});
+
 bot.command('help', async (ctx) => {
-  await ctx.reply(
-    'Правила:\n' +
-    '• Поле 3×3\n' +
-    '• Макс. 3 фигуры на игрока\n' +
-    '• 4-я фигура убирает самую старую\n' +
-    '• Побеждает тот, кто соберёт 3 в ряд\n\n' +
-    'Нажми /start чтобы начать игру!'
-  );
+  await ctx.reply(`
+🆘 **Справка**
+
+/start — Главное меню
+/play — Быстрый старт игры
+/help — Эта справка
+
+**Режимы игры:**
+• 🤖 С бот — играй против AI
+• 👥 Онлайн — мультиплеер с друзьями
+
+**Как играть онлайн:**
+1. Нажми "Онлайн" в игре
+2. Создай комнату или используй быстрый матч
+3. Поделись кодом с другом
+4. Игра начнётся автоматически!
+  `.trim(), { parse_mode: 'Markdown' });
 });
 
-// Start the bot
+bot.command('invite', async (ctx) => {
+  const args = ctx.match;
+  
+  if (!args) {
+    await ctx.reply('Использование: /invite КОМНАТЫ\n\nПример: /invite abc123');
+    return;
+  }
+  
+  const roomId = args.trim();
+  const keyboard = new InlineKeyboard()
+    .webApp('🎮 Присоединиться', `${MINI_APP_URL}?start=game_${roomId}`)
+    .row()
+    .url('📤 Поделиться', `https://t.me/share/url?url=https://t.me/${ctx.me.username}?start=game_${roomId}&text=Играй со мной в Infinite Tic-Tac-Toe!`);
+  
+  await ctx.reply(`🎯 Комната: ${roomId}`, { reply_markup: keyboard });
+});
+
+bot.api.setMyCommands([
+  { command: 'start', description: 'Главное меню' },
+  { command: 'play', description: 'Начать игру' },
+  { command: 'help', description: 'Справка' },
+  { command: 'invite', description: 'Пригласить в комнату' }
+]);
+
 bot.start();
-console.log('Bot is running...');
+console.log('🤖 Bot is running...');
