@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1c1e">
   <title>Infinite Tic-Tac-Toe</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
@@ -10,48 +11,73 @@
 </head>
 <body>
   <div id="app">
-    <header id="header">
-      <div id="mode-selector" class="mode-selector">
+    <!-- Header -->
+    <div class="header-section">
+      <div class="app-title">Infinite Tic-Tac-Toe</div>
+      
+      <div class="mode-selector">
         <button id="btn-mode-single" class="mode-btn active">С бот</button>
         <button id="btn-mode-multi" class="mode-btn">Онлайн</button>
       </div>
-      <div id="status" class="status">Ход: <span id="turn-indicator" class="turn-x">X</span></div>
-      <div id="score" class="score">
-        <span class="score-x">X: <span id="score-x">0</span></span>
-        <span class="score-sep">—</span>
-        <span class="score-o">O: <span id="score-o">0</span></span>
-      </div>
-    </header>
+    </div>
 
-    <main id="game-area">
-      <div id="board" class="board">
-        <div class="cell" data-cell="0"></div>
-        <div class="cell" data-cell="1"></div>
-        <div class="cell" data-cell="2"></div>
-        <div class="cell" data-cell="3"></div>
-        <div class="cell" data-cell="4"></div>
-        <div class="cell" data-cell="5"></div>
-        <div class="cell" data-cell="6"></div>
-        <div class="cell" data-cell="7"></div>
-        <div class="cell" data-cell="8"></div>
+    <!-- Status -->
+    <div class="status-bar">
+      <div id="status" class="status">Ход: <span id="turn-indicator" class="turn-x">X</span></div>
+      <div class="score-container">
+        <div class="score-pill score-pill-x">
+          <span>X</span>
+          <span id="score-x">0</span>
+        </div>
+        <div class="score-pill score-pill-o">
+          <span>O</span>
+          <span id="score-o">0</span>
+        </div>
       </div>
+    </div>
+
+    <!-- Game Area -->
+    <main id="game-area">
+      <div class="board-container">
+        <div id="board" class="board">
+          <div class="cell" data-cell="0"></div>
+          <div class="cell" data-cell="1"></div>
+          <div class="cell" data-cell="2"></div>
+          <div class="cell" data-cell="3"></div>
+          <div class="cell" data-cell="4"></div>
+          <div class="cell" data-cell="5"></div>
+          <div class="cell" data-cell="6"></div>
+          <div class="cell" data-cell="7"></div>
+          <div class="cell" data-cell="8"></div>
+        </div>
+        
+        <div class="pieces-counter">
+          <div class="piece-count piece-count-x">
+            <span class="piece-dot active"></span>
+            <span class="piece-dot"></span>
+            <span class="piece-dot"></span>
+            <span>X: <span id="pieces-x">0</span>/3</span>
+          </div>
+          <div class="piece-count piece-count-o">
+            <span class="piece-dot active"></span>
+            <span class="piece-dot"></span>
+            <span class="piece-dot"></span>
+            <span>O: <span id="pieces-o">0</span>/3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win Overlay -->
       <div id="win-overlay" class="win-overlay hidden">
         <div class="win-content">
           <div id="win-text" class="win-text"></div>
-          <button id="btn-restart" class="btn-primary">Ещё раз</button>
+          <button id="btn-restart" class="btn-primary">Играть снова</button>
         </div>
       </div>
     </main>
-
-    <footer id="footer">
-      <div class="pieces-info">
-        <span class="pieces-x">X: <span id="pieces-x">0</span>/3</span>
-        <span class="pieces-o">O: <span id="pieces-o">0</span>/3</span>
-      </div>
-    </footer>
   </div>
 
-  <!-- Multiplayer Options Modal -->
+  <!-- Multiplayer Modal -->
   <div id="modal-multiplayer" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
@@ -59,14 +85,21 @@
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <button id="btn-quick-match" class="btn-primary btn-block">Быстрый матч</button>
-        <button id="btn-create-room" class="btn-secondary btn-block">Создать комнату</button>
-        <button id="btn-join-room" class="btn-secondary btn-block">Войти по коду</button>
+        <button id="btn-quick-match" class="btn-primary btn-block btn-icon">
+          ⚡ Быстрый матч
+        </button>
+        <div class="divider">или</div>
+        <button id="btn-create-room" class="btn-secondary btn-block">
+          Создать комнату
+        </button>
+        <button id="btn-join-room" class="btn-secondary btn-block">
+          Войти по коду
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Room Info Modal -->
+  <!-- Room Created Modal -->
   <div id="modal-room-info" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
@@ -74,11 +107,15 @@
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="room-label">Код комнаты:</p>
+        <p class="room-label">Код комнаты</p>
         <div id="room-id-display" class="room-code">ABC123</div>
         <p class="room-hint">Отправь код другу или поделись ссылкой</p>
-        <button id="btn-copy-room" class="btn-primary btn-block">Поделиться</button>
-        <button id="btn-close-room-info" class="btn-secondary btn-block">Жду соперника...</button>
+        <button id="btn-copy-room" class="btn-primary btn-block">
+          📤 Поделиться
+        </button>
+        <button id="btn-close-room-info" class="btn-secondary btn-block">
+          Жду соперника...
+        </button>
       </div>
     </div>
   </div>
@@ -91,7 +128,7 @@
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <input type="text" id="input-room-id" class="input-room" placeholder="Введите код комнаты" maxlength="20">
+        <input type="text" id="input-room-id" class="input-room" placeholder="Введите код" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         <button id="btn-join-confirm" class="btn-primary btn-block">Войти</button>
       </div>
     </div>
@@ -101,7 +138,7 @@
   <div id="modal-loading" class="modal hidden">
     <div class="modal-content modal-loading">
       <div class="spinner"></div>
-      <p id="loading-text">Загрузка...</p>
+      <p id="loading-text" class="loading-text">Поиск соперника...</p>
     </div>
   </div>
 

@@ -74,8 +74,22 @@ export function renderBoard(game) {
 
   document.getElementById('pieces-x').textContent = getActivePieceCount(game.moves, 'X');
   document.getElementById('pieces-o').textContent = getActivePieceCount(game.moves, 'O');
+  
+  updatePieceDots('x', getActivePieceCount(game.moves, 'X'));
+  updatePieceDots('o', getActivePieceCount(game.moves, 'O'));
 
   game._rendered = true;
+}
+
+function updatePieceDots(player, count) {
+  const dots = document.querySelectorAll(`.piece-count-${player} .piece-dot`);
+  dots.forEach((dot, i) => {
+    if (i < count) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
 }
 
 export function showWinOverlay(winner, customText) {
