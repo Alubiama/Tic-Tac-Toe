@@ -90,10 +90,29 @@
         </button>
         <div class="divider">или</div>
         <button id="btn-create-room" class="btn-secondary btn-block">
-          Создать комнату
+          ➕ Создать комнату
         </button>
         <button id="btn-join-room" class="btn-secondary btn-block">
-          Войти по коду
+          🚪 Войти по коду
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Room Modal -->
+  <div id="modal-create-room" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Создать комнату</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="input-hint">Придумай код комнаты (3-12 символов)</p>
+        <input type="text" id="input-create-room-id" class="input-room" placeholder="Например: GAME123" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+        <button id="btn-create-confirm" class="btn-primary btn-block">Создать</button>
+        <div class="divider">или</div>
+        <button id="btn-create-random" class="btn-secondary btn-block">
+          🎲 Случайный код
         </button>
       </div>
     </div>

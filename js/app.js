@@ -45,10 +45,35 @@ function init() {
     showMultiplayerOptions();
   });
   
-  document.getElementById('btn-create-room').addEventListener('click', async () => {
+  document.getElementById('btn-create-room').addEventListener('click', () => {
     hapticTap();
     hideModal('modal-multiplayer');
-    await handleCreateRoom();
+    showCreateRoomInput();
+  });
+  
+  document.getElementById('btn-create-confirm').addEventListener('click', async () => {
+    hapticTap();
+    const customId = document.getElementById('input-create-room-id').value.trim().toUpperCase();
+    if (!customId) {
+      alert('Введите код комнаты');
+      return;
+    }
+    if (customId.length < 3) {
+      alert('Код должен быть минимум 3 символа');
+      return;
+    }
+    if (!/^[A-Z0-9]+$/.test(customId)) {
+      alert('Только латинские буквы и цифры');
+      return;
+    }
+    hideModal('modal-create-room');
+    await handleCreateRoom(customId);
+  });
+  
+  document.getElementById('btn-create-random').addEventListener('click', async () => {
+    hapticTap();
+    hideModal('modal-create-room');
+    await handleCreateRoom(null);
   });
   
   document.getElementById('btn-quick-match').addEventListener('click', async () => {
@@ -76,6 +101,26 @@ function init() {
       hapticTap();
       btn.closest('.modal').classList.add('hidden');
     });
+  });
+  
+  // Auto uppercase for room code inputs
+  document.getElementById('input-create-room-id').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+  document.getElementById('input-room-id').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+  
+  // Enter key handlers
+  document.getElementById('input-create-room-id').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('btn-create-confirm').click();
+    }
+  });
+  document.getElementById('input-room-id').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('btn-join-confirm').click();
+    }
   });
   
   renderBoard(game);
@@ -120,6 +165,11 @@ function showMultiplayerOptions() {
   document.getElementById('modal-multiplayer').classList.remove('hidden');
 }
 
+function showCreateRoomInput() {
+  document.getElementById('modal-create-room').classList.remove('hidden');
+  document.getElementById('input-create-room-id').focus();
+}
+
 function showJoinRoomInput() {
   hideModal('modal-multiplayer');
   document.getElementById('modal-join-room').classList.remove('hidden');
@@ -130,12 +180,23 @@ function hideModal(modalId) {
   document.getElementById(modalId).classList.add('hidden');
 }
 
-async function handleCreateRoom() {
-  const roomId = await createMultiplayerGame();
-  if (roomId) {
+async function handleCreateRoom(customRoomId) {
+  showLoading('Создание комнаты...');
+  const result = await createMultiplayerGame(customRoomId);
+  hideLoading();
+  
+  if (result && result.error === 'already_exists') {
+    alert('Комната с таким кодом уже существует. Выбери другой код.');
+    showCreateRoomInput();
+    return;
+  }
+  
+  if (result) {
     currentMode = MODE_MULTI;
-    showRoomInfo(roomId);
+    showRoomInfo(result);
     updateModeUI();
+  } else {
+    alert('Не удалось создать комнату');
   }
 }
 

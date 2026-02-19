@@ -48,10 +48,18 @@ export function isFirebaseReady() {
   return database !== null;
 }
 
-export function createRoom(hostId, hostName) {
+export function createRoom(hostId, hostName, customRoomId = null) {
   const roomsRef = ref(database, 'rooms');
-  const newRoomRef = push(roomsRef);
-  const roomId = newRoomRef.key;
+  
+  let roomId = customRoomId;
+  let newRoomRef;
+  
+  if (customRoomId) {
+    newRoomRef = ref(database, `rooms/${customRoomId}`);
+  } else {
+    newRoomRef = push(roomsRef);
+    roomId = newRoomRef.key;
+  }
   
   const roomData = {
     host: { id: hostId, name: hostName },
@@ -66,14 +74,19 @@ export function createRoom(hostId, hostName) {
     }
   };
   
-  set(newRoomRef, roomData);
-  
-  const presenceRef = ref(database, `rooms/${roomId}/host/presence`);
-  set(presenceRef, 'online');
-  onDisconnect(presenceRef).set('offline');
-  onDisconnect(ref(database, `rooms/${roomId}`)).remove();
-  
-  return roomId;
+  return set(newRoomRef, roomData).then(() => {
+    const presenceRef = ref(database, `rooms/${roomId}/host/presence`);
+    set(presenceRef, 'online');
+    onDisconnect(presenceRef).set('offline');
+    onDisconnect(ref(database, `rooms/${roomId}`)).remove();
+    
+    return roomId;
+  });
+}
+
+export function checkRoomExists(roomId) {
+  const roomRef = ref(database, `rooms/${roomId}`);
+  return get(roomRef).then(snapshot => snapshot.exists());
 }
 
 export function joinRoom(roomId, guestId, guestName) {

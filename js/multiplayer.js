@@ -7,7 +7,8 @@ import {
   findOpenRoom,
   listenToOpenRooms,
   isFirebaseReady,
-  initFirebase
+  initFirebase,
+  checkRoomExists
 } from './firebase.js';
 import { getUser, getStartParam, hapticPlace, hapticWin, hapticLose } from './telegram.js';
 import { createGame, makeMove as baseMakeMove, resetGame, isValidMove } from './game.js';
@@ -70,13 +71,22 @@ export function getMySymbol() {
   return mySymbol;
 }
 
-export async function createMultiplayerGame() {
+export async function createMultiplayerGame(customRoomId = null) {
   if (!isFirebaseReady()) {
     alert('Мультиплеер недоступен. Проверьте конфигурацию Firebase.');
     return null;
   }
   
-  roomId = createRoom(playerId, playerName);
+  let roomId = customRoomId;
+  
+  if (customRoomId) {
+    const exists = await checkRoomExists(customRoomId);
+    if (exists) {
+      return { error: 'already_exists' };
+    }
+  }
+  
+  roomId = await createRoom(playerId, playerName, customRoomId);
   mySymbol = 'X';
   currentMode = MODE_MULTI;
   game = createGame();
