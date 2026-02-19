@@ -15,26 +15,33 @@ import {
 let database = null;
 let app = null;
 
-const firebaseConfig = {
-  apiKey: window.FIREBASE_API_KEY || "",
-  authDomain: window.FIREBASE_AUTH_DOMAIN || "",
-  databaseURL: window.FIREBASE_DATABASE_URL || "",
-  projectId: window.FIREBASE_PROJECT_ID || "",
-  storageBucket: window.FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: window.FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: window.FIREBASE_APP_ID || ""
-};
-
 export function initFirebase() {
-  if (!firebaseConfig.databaseURL) {
+  const config = {
+    apiKey: window.FIREBASE_API_KEY || "",
+    authDomain: window.FIREBASE_AUTH_DOMAIN || "",
+    databaseURL: window.FIREBASE_DATABASE_URL || "",
+    projectId: window.FIREBASE_PROJECT_ID || "",
+    storageBucket: window.FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: window.FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: window.FIREBASE_APP_ID || ""
+  };
+  
+  console.log('Firebase config:', config.databaseURL ? 'OK' : 'MISSING');
+  
+  if (!config.databaseURL) {
     console.warn('Firebase not configured. Multiplayer disabled.');
     return false;
   }
   
-  app = initializeApp(firebaseConfig);
-  database = getDatabase(app);
-  console.log('Firebase initialized');
-  return true;
+  try {
+    app = initializeApp(config);
+    database = getDatabase(app);
+    console.log('Firebase initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Firebase init error:', error);
+    return false;
+  }
 }
 
 export function isFirebaseReady() {

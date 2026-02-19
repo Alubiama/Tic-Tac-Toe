@@ -168,7 +168,8 @@ function showRoomInfo(roomId) {
   document.getElementById('modal-room-info').classList.remove('hidden');
   
   document.getElementById('btn-copy-room').onclick = () => {
-    const shareUrl = `https://t.me/share/url?url=https://t.me/yourbot?start=game_${roomId}&text=Играй со мной в Infinite Tic-Tac-Toe!`;
+    const botLink = `https://t.me/InfTicTacToeBot?startapp=game_${roomId}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent('Играй со мной в Infinite Tic-Tac-Toe!')}`;
     window.Telegram?.WebApp?.openTelegramLink(shareUrl);
     hapticTap();
   };

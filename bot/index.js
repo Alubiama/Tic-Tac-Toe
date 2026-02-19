@@ -16,47 +16,31 @@ bot.command('start', async (ctx) => {
   if (startParam && startParam.startsWith('game_')) {
     const roomId = startParam.replace('game_', '');
     const keyboard = new InlineKeyboard()
-      .webApp('🎮 Присоединиться', `${MINI_APP_URL}?start=game_${roomId}`);
+      .webApp('🎮 Присоединиться к игре', `${MINI_APP_URL}?startapp=game_${roomId}`);
     
-    await ctx.reply('🎯 Тебя пригласили в игру!', { reply_markup: keyboard });
+    await ctx.reply('🎯 Тебя пригласили в игру Infinite Tic-Tac-Toe!', { reply_markup: keyboard });
     return;
   }
 
-  if (startParam === 'play') {
-    await sendMainMenu(ctx, true);
-    return;
-  }
-
-  await sendMainMenu(ctx);
-});
-
-async function sendMainMenu(ctx, showGameButton = false) {
   const keyboard = new InlineKeyboard()
     .webApp('🎮 Играть', MINI_APP_URL)
     .row()
-    .text('📖 Правила', 'rules')
-    .text('📊 Статистика', 'stats');
+    .text('📖 Правила', 'rules');
 
-  const text = `
-🔥 **Infinite Tic-Tac-Toe**
-
-Бесконечные крестики-нолики!
-
-• Поле 3×3
-• У каждого максимум 3 фишки  
-• 4-я фишка убирает самую старую
-• Побеждает тот, кто соберёт 3 в ряд
-
-Выбери режим:
-🤖 **Против бота** — тренировка
-👥 **Онлайн** — играй с друзьями
-  `.trim();
-
-  await ctx.reply(text, { 
-    parse_mode: 'Markdown',
-    reply_markup: keyboard 
-  });
-}
+  await ctx.reply(
+    `🔥 *Infinite Tic-Tac-Toe*\n\n` +
+    `Бесконечные крестики-нолики!\n\n` +
+    `• Поле 3×3\n` +
+    `• У каждого максимум 3 фишки\n` +
+    `• 4-я фишка убирает самую старую\n` +
+    `• Побеждает тот, кто соберёт 3 в ряд\n\n` +
+    `Нажми *Играть* чтобы начать!`,
+    { 
+      parse_mode: 'Markdown',
+      reply_markup: keyboard 
+    }
+  );
+});
 
 bot.callbackQuery('rules', async (ctx) => {
   const rulesText = `

@@ -39,7 +39,9 @@ export function getUser() {
 }
 
 export function getStartParam() {
-  return tg?.initDataUnsafe?.start_param || null;
+  const param = tg?.initDataUnsafe?.start_param || tg?.initData?.start_param || null;
+  console.log('Start param:', param);
+  return param;
 }
 
 export function hapticTap() {
