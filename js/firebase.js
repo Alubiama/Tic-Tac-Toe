@@ -98,8 +98,15 @@ export function joinRoom(roomId, guestId, guestName) {
     }
     
     const room = snapshot.val();
-    if (room.guest) {
+    
+    // Check if room has active guest (not offline)
+    if (room.guest && room.guest.presence !== 'offline') {
       return { success: false, error: 'room_full' };
+    }
+    
+    // Check if trying to join own room
+    if (room.host && room.host.id === guestId) {
+      return { success: false, error: 'own_room' };
     }
     
     update(roomRef, {

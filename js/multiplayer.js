@@ -107,9 +107,13 @@ export async function joinMultiplayerGame(targetRoomId) {
   const result = await joinRoom(targetRoomId, playerId, playerName);
   
   if (!result.success) {
-    alert(result.error === 'room_not_found' 
-      ? 'Комната не найдена' 
-      : 'Комната уже занята');
+    if (result.error === 'room_not_found') {
+      alert('❌ Комната не найдена. Проверьте код.');
+    } else if (result.error === 'own_room') {
+      alert('ℹ️ Это твоя комната! Поделись кодом с другом.');
+    } else {
+      alert('❌ Комната занята. Попробуйте другую.');
+    }
     return false;
   }
   
@@ -147,11 +151,18 @@ function listenToRoomChanges() {
       return;
     }
     
-    if (roomData.guest?.presence === 'offline' || roomData.host?.presence === 'offline') {
-      if (currentMode === MODE_MULTI) {
-        handleOpponentLeft();
-        return;
-      }
+    console.log('Room update:', roomData);
+    
+    // Check if opponent left (not us)
+    if (mySymbol === 'X' && roomData.guest?.presence === 'offline') {
+      // We are host, guest left
+      handleOpponentLeft();
+      return;
+    }
+    if (mySymbol === 'O' && roomData.host?.presence === 'offline') {
+      // We are guest, host left
+      handleOpponentLeft();
+      return;
     }
     
     if (roomData.game) {
@@ -270,10 +281,30 @@ export function cleanup() {
 }
 
 async function autoJoinRoom(targetRoomId) {
+  console.log('Auto-joining room:', targetRoomId);
+  showLoading('Подключение к игре...');
   const joined = await joinMultiplayerGame(targetRoomId);
-  if (!joined) {
+  hideLoading();
+  
+  if (joined) {
+    currentMode = MODE_MULTI;
+    if (onModeChange) onModeChange(currentMode, targetRoomId);
+  } else {
     console.warn('Auto-join failed for room:', targetRoomId);
   }
+}
+
+// Add these for app.js
+function showLoading(text) {
+  const loadingEl = document.getElementById('loading-text');
+  const modalEl = document.getElementById('modal-loading');
+  if (loadingEl) loadingEl.textContent = text;
+  if (modalEl) modalEl.classList.remove('hidden');
+}
+
+function hideLoading() {
+  const modalEl = document.getElementById('modal-loading');
+  if (modalEl) modalEl.classList.add('hidden');
 }
 
 export { MODE_SINGLE, MODE_MULTI };
