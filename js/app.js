@@ -1,7 +1,7 @@
 // Minimal app for debugging
 import { createGame, makeMove, isValidMove } from './game.js';
 import { getAiMove } from './ai.js';
-import { initTg, haptic } from './telegram.js';
+import { init, haptic } from './telegram.js';
 
 let game = createGame();
 let aiThinking = false;
@@ -69,10 +69,10 @@ document.getElementById('btn-restart')?.addEventListener('click', () => {
 
 // Init
 try {
-  initTg();
+  init();
   console.log('Telegram initialized');
 } catch (e) {
-  console.log('No Telegram');
+  console.log('No Telegram:', e);
 }
 
 render();
