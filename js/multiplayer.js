@@ -8,7 +8,9 @@ import {
   listenToOpenRooms,
   isFirebaseReady,
   initFirebase,
-  checkRoomExists
+  checkRoomExists,
+  setTestMode,
+  isInTestMode
 } from './firebase.js';
 import { getUser, getStartParam, hapticPlace, hapticWin, hapticLose } from './telegram.js';
 import { createGame, makeMove as baseMakeMove, resetGame, isValidMove } from './game.js';
@@ -16,6 +18,7 @@ import { renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from 
 
 const MODE_SINGLE = 'single';
 const MODE_MULTI = 'multi';
+const MODE_TEST = 'test';
 
 let currentMode = MODE_SINGLE;
 let roomId = null;
@@ -64,11 +67,17 @@ export function getRoomId() {
 
 export function isMyTurn() {
   if (currentMode === MODE_SINGLE) return game.currentPlayer === 'X';
+  if (currentMode === MODE_TEST) return true; // Always your turn in test mode
   return game.currentPlayer === mySymbol;
 }
 
 export function getMySymbol() {
+  if (currentMode === MODE_TEST) return game.currentPlayer; // Current player in test
   return mySymbol;
+}
+
+export function isInTestMode() {
+  return currentMode === MODE_TEST;
 }
 
 export async function createMultiplayerGame(customRoomId = null) {
@@ -225,6 +234,10 @@ export function makeMove(cellIndex) {
     return false;
   }
   
+  if (currentMode === MODE_TEST) {
+    return makeTestMove(cellIndex);
+  }
+  
   if (!isMyTurn()) return false;
   if (game.winner) return false;
   if (!isValidMove(game.moves, game.currentPlayer, cellIndex)) return false;
@@ -248,7 +261,58 @@ export function makeMove(cellIndex) {
   return true;
 }
 
+// Test mode - play both sides locally
+function makeTestMove(cellIndex) {
+  if (game.winner) return false;
+  if (!isValidMove(game.moves, game.currentPlayer, cellIndex)) return false;
+  
+  game = baseMakeMove(game, cellIndex);
+  hapticPlace();
+  renderBoard(game);
+  
+  if (game.winner) {
+    handleTestWin(game.winner);
+  }
+  
+  return true;
+}
+
+function handleTestWin(winner) {
+  hapticWin();
+  animateScoreUpdate(winner);
+  
+  setTimeout(() => {
+    showWinOverlay(winner, `${winner} победил!`);
+  }, 500);
+  
+  prevWinner = winner;
+}
+
+export function restartTestGame() {
+  if (currentMode !== MODE_TEST) return;
+  
+  game = resetGame(game);
+  hideWinOverlay();
+  renderBoard(game);
+}
+
+export function startTestMode() {
+  currentMode = MODE_TEST;
+  mySymbol = null;
+  game = createGame();
+  renderBoard(game);
+  
+  if (onModeChange) onModeChange(currentMode, null);
+  
+  return true;
+}
+
 export function restartMultiplayerGame() {
+  if (currentMode === MODE_TEST) {
+    restartTestGame();
+    return;
+  }
+  
   if (currentMode !== MODE_MULTI) return;
   
   game = resetGame(game);
@@ -270,7 +334,7 @@ export function cleanup() {
     unsubscribeRoom = null;
   }
   
-  if (roomId) {
+  if (roomId && currentMode !== MODE_TEST) {
     leaveRoom(roomId);
     roomId = null;
   }
@@ -280,31 +344,6 @@ export function cleanup() {
   prevWinner = null;
 }
 
-async function autoJoinRoom(targetRoomId) {
-  console.log('Auto-joining room:', targetRoomId);
-  showLoading('Подключение к игре...');
-  const joined = await joinMultiplayerGame(targetRoomId);
-  hideLoading();
-  
-  if (joined) {
-    currentMode = MODE_MULTI;
-    if (onModeChange) onModeChange(currentMode, targetRoomId);
-  } else {
-    console.warn('Auto-join failed for room:', targetRoomId);
-  }
-}
+// ... rest of file
 
-// Add these for app.js
-function showLoading(text) {
-  const loadingEl = document.getElementById('loading-text');
-  const modalEl = document.getElementById('modal-loading');
-  if (loadingEl) loadingEl.textContent = text;
-  if (modalEl) modalEl.classList.remove('hidden');
-}
-
-function hideLoading() {
-  const modalEl = document.getElementById('modal-loading');
-  if (modalEl) modalEl.classList.add('hidden');
-}
-
-export { MODE_SINGLE, MODE_MULTI };
+export { MODE_SINGLE, MODE_MULTI, MODE_TEST };

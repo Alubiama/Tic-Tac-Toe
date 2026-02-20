@@ -13,8 +13,11 @@ import {
   isMyTurn,
   getMySymbol,
   cleanup,
+  startTestMode,
+  isInTestMode,
   MODE_SINGLE,
-  MODE_MULTI
+  MODE_MULTI,
+  MODE_TEST
 } from './multiplayer.js';
 
 const AI_PLAYER = 'O';
@@ -87,6 +90,12 @@ function init() {
     showJoinRoomInput();
   });
   
+  document.getElementById('btn-test-mode').addEventListener('click', () => {
+    hapticTap();
+    hideModal('modal-multiplayer');
+    handleTestMode();
+  });
+  
   document.getElementById('btn-join-confirm').addEventListener('click', async () => {
     hapticTap();
     const roomId = document.getElementById('input-room-id').value.trim();
@@ -149,6 +158,10 @@ function updateModeUI() {
     singleBtn.classList.add('active');
     multiBtn.classList.remove('active');
     turnEl.innerHTML = `Ход: <span id="turn-indicator" class="turn-${game.currentPlayer.toLowerCase()}">${game.currentPlayer}</span>`;
+  } else if (currentMode === MODE_TEST) {
+    singleBtn.classList.remove('active');
+    multiBtn.classList.add('active');
+    turnEl.innerHTML = `<span class="my-turn">🧪 Тест: ход ${game.currentPlayer}</span>`;
   } else {
     singleBtn.classList.remove('active');
     multiBtn.classList.add('active');
@@ -159,6 +172,12 @@ function updateModeUI() {
       ? `<span class="my-turn">Твой ход (${mySym})</span>`
       : `<span class="opponent-turn">Ход соперника...</span>`;
   }
+}
+
+function handleTestMode() {
+  startTestMode();
+  currentMode = MODE_TEST;
+  updateModeUI();
 }
 
 function showMultiplayerOptions() {
@@ -251,7 +270,7 @@ function hideLoading() {
 }
 
 function handleCellClick(cellIndex) {
-  if (currentMode === MODE_MULTI) {
+  if (currentMode === MODE_MULTI || currentMode === MODE_TEST) {
     handleMultiplayerClick(cellIndex);
     return;
   }
@@ -327,8 +346,11 @@ function handleWin(winner) {
 }
 
 function restartGame() {
-  if (currentMode === MODE_MULTI) {
+  if (currentMode === MODE_MULTI || currentMode === MODE_TEST) {
     restartMultiplayerGame();
+    if (currentMode === MODE_TEST) {
+      updateModeUI();
+    }
   } else {
     game = resetGame(game);
     hideWinOverlay();

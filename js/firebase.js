@@ -14,6 +14,15 @@ import {
 
 let database = null;
 let app = null;
+let isTestMode = false;
+
+export function setTestMode(enabled) {
+  isTestMode = enabled;
+}
+
+export function isInTestMode() {
+  return isTestMode;
+}
 
 export function initFirebase() {
   const config = {
