@@ -1,7 +1,7 @@
 import { initFirebase, isReady, createRoom, joinRoom, listenRoom, updateGame, leaveRoom, findOpenRoom, checkRoomExists } from './firebase.js';
 import { getUser, getStartParam, haptic } from './telegram.js';
 import { createGame, makeMove, resetGame, isValidMove } from './game.js';
-import { render, showWin, hideWin, pulseScore } from './board.js';
+import { renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
 
 export const SINGLE = 'single';
 export const MULTI = 'multi';
@@ -84,7 +84,7 @@ export function startTest() {
   mode = TEST;
   mySymbol = null;
   game = createGame();
-  render(game);
+  renderBoard(game);
 }
 
 // === GAME LOGIC ===
@@ -97,6 +97,18 @@ function listen() {
       cleanup();
       return;
     }
+    
+    if (data.game) {
+      const wasMyTurn = game.currentPlayer === mySymbol;
+      game = { ...game, ...data.game };
+      if (data.game.moves?.length > (game.moves?.length || 0) && !wasMyTurn) {
+        haptic('medium');
+      }
+      renderBoard(game);
+      if (data.game.winner) handleWin(data.game.winner);
+    }
+  });
+}
     
     if (data.game) {
       const wasMyTurn = game.currentPlayer === mySymbol;
@@ -119,7 +131,7 @@ export function move(cell) {
   
   if (mode === TEST) {
     haptic('medium');
-    render(game);
+    renderBoard(game);
     if (game.winner) handleWin(game.winner);
     return true;
   }
@@ -132,25 +144,25 @@ export function move(cell) {
   });
   
   haptic('medium');
-  render(game);
+  renderBoard(game);
   if (game.winner) handleWin(game.winner);
   return true;
 }
 
 function handleWin(winner) {
   haptic(winner === mySymbol ? 'win' : 'lose');
-  pulseScore(winner);
+  animateScoreUpdate(winner);
   setTimeout(() => {
     const text = mode === TEST ? `${winner} победил!` 
       : winner === mySymbol ? 'Ты победил!' : 'Ты проиграл...';
-    showWin(winner, text);
+    showWinOverlay(winner, text);
   }, 400);
 }
 
 export function restart() {
   game = resetGame(game);
-  hideWin();
-  render(game);
+  hideWinOverlay();
+  renderBoard(game);
   
   if (mode === MULTI) {
     updateGame(roomId, { moves: [], currentPlayer: 'X', winner: null, winLine: null });
