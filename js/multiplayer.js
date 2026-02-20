@@ -1,248 +1,128 @@
-import { 
-  createRoom, 
-  joinRoom, 
-  listenToRoom, 
-  updateGame, 
-  leaveRoom,
-  findOpenRoom,
-  listenToOpenRooms,
-  isFirebaseReady,
-  initFirebase,
-  checkRoomExists,
-  setTestMode,
-  isInTestMode
-} from './firebase.js';
-import { getUser, getStartParam, hapticPlace, hapticWin, hapticLose } from './telegram.js';
-import { createGame, makeMove as baseMakeMove, resetGame, isValidMove } from './game.js';
-import { renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
+import { initFirebase, isReady, createRoom, joinRoom, listenRoom, updateGame, leaveRoom, findOpenRoom, checkRoomExists } from './firebase.js';
+import { getUser, getStartParam, haptic } from './telegram.js';
+import { createGame, makeMove, resetGame, isValidMove } from './game.js';
+import { render, showWin, hideWin, pulseScore } from './board.js';
 
-const MODE_SINGLE = 'single';
-const MODE_MULTI = 'multi';
-const MODE_TEST = 'test';
+export const SINGLE = 'single';
+export const MULTI = 'multi';
+export const TEST = 'test';
 
-let currentMode = MODE_SINGLE;
+let mode = SINGLE;
 let roomId = null;
-let playerId = null;
-let playerName = null;
+let myId = null;
+let myName = null;
 let mySymbol = null;
 let game = createGame();
-let unsubscribeRoom = null;
-let onModeChange = null;
+let unsub = null;
 
-export function initMultiplayer() {
-  if (!initFirebase()) {
-    console.warn('Firebase init failed, singleplayer only');
-    return false;
-  }
+export function init() {
+  initFirebase();
   
   const user = getUser();
-  if (user) {
-    playerId = user.id.toString();
-    playerName = user.first_name;
-  } else {
-    playerId = 'guest_' + Math.random().toString(36).substr(2, 9);
-    playerName = 'Guest';
+  myId = user?.id?.toString() || 'guest_' + Math.random().toString(36).slice(2, 8);
+  myName = user?.first_name || 'Guest';
+  
+  // Auto-join from invite link
+  const param = getStartParam();
+  if (param?.startsWith('game_')) {
+    join(param.slice(5));
+  }
+}
+
+export function getMode() { return mode; }
+export function getRoomId() { return roomId; }
+export function isMyTurn() { 
+  return mode === TEST ? true : game.currentPlayer === mySymbol; 
+}
+export function getMySymbol() { return mySymbol; }
+
+// === CREATE ROOM ===
+
+export async function create(customId = null) {
+  if (!isReady()) return null;
+  
+  if (customId && await checkRoomExists(customId)) {
+    return { error: 'exists' };
   }
   
-  const startParam = getStartParam();
-  if (startParam && startParam.startsWith('game_')) {
-    const inviteRoomId = startParam.replace('game_', '');
-    autoJoinRoom(inviteRoomId);
-  }
-  
-  return true;
-}
-
-export function setOnModeChange(callback) {
-  onModeChange = callback;
-}
-
-export function getMode() {
-  return currentMode;
-}
-
-export function getRoomId() {
-  return roomId;
-}
-
-export function isMyTurn() {
-  if (currentMode === MODE_SINGLE) return game.currentPlayer === 'X';
-  if (currentMode === MODE_TEST) return true; // Always your turn in test mode
-  return game.currentPlayer === mySymbol;
-}
-
-export function getMySymbol() {
-  if (currentMode === MODE_TEST) return game.currentPlayer; // Current player in test
-  return mySymbol;
-}
-
-export function isInTestMode() {
-  return currentMode === MODE_TEST;
-}
-
-export async function createMultiplayerGame(customRoomId = null) {
-  if (!isFirebaseReady()) {
-    alert('Мультиплеер недоступен. Проверьте конфигурацию Firebase.');
-    return null;
-  }
-  
-  let roomId = customRoomId;
-  
-  if (customRoomId) {
-    const exists = await checkRoomExists(customRoomId);
-    if (exists) {
-      return { error: 'already_exists' };
-    }
-  }
-  
-  roomId = await createRoom(playerId, playerName, customRoomId);
+  roomId = await createRoom(myId, myName, customId);
   mySymbol = 'X';
-  currentMode = MODE_MULTI;
+  mode = MULTI;
   game = createGame();
-  
-  listenToRoomChanges();
-  
-  if (onModeChange) onModeChange(currentMode, roomId);
-  
+  listen();
   return roomId;
 }
 
-export async function joinMultiplayerGame(targetRoomId) {
-  if (!isFirebaseReady()) {
-    alert('Мультиплеер недоступен. Проверьте конфигурацию Firebase.');
+// === JOIN ROOM ===
+
+export async function join(id) {
+  if (!isReady()) return false;
+  
+  const res = await joinRoom(id, myId, myName);
+  
+  if (!res.ok) {
+    const msgs = {
+      'not_found': 'Комната не найдена',
+      'full': 'Комната занята',
+      'own_room': 'Это твоя комната'
+    };
+    alert(msgs[res.error] || 'Ошибка');
     return false;
   }
   
-  const result = await joinRoom(targetRoomId, playerId, playerName);
-  
-  if (!result.success) {
-    if (result.error === 'room_not_found') {
-      alert('❌ Комната не найдена. Проверьте код.');
-    } else if (result.error === 'own_room') {
-      alert('ℹ️ Это твоя комната! Поделись кодом с другом.');
-    } else {
-      alert('❌ Комната занята. Попробуйте другую.');
-    }
-    return false;
-  }
-  
-  roomId = targetRoomId;
+  roomId = id;
   mySymbol = 'O';
-  currentMode = MODE_MULTI;
+  mode = MULTI;
   game = createGame();
-  
-  listenToRoomChanges();
-  
-  if (onModeChange) onModeChange(currentMode, roomId);
-  
+  listen();
   return true;
 }
 
-export async function quickMatch() {
-  if (!isFirebaseReady()) return null;
-  
-  const openRoomId = await findOpenRoom();
-  
-  if (openRoomId) {
-    const joined = await joinMultiplayerGame(openRoomId);
-    return joined ? openRoomId : null;
-  }
-  
-  return await createMultiplayerGame();
+// === TEST MODE ===
+
+export function startTest() {
+  mode = TEST;
+  mySymbol = null;
+  game = createGame();
+  render(game);
 }
 
-function listenToRoomChanges() {
-  if (unsubscribeRoom) unsubscribeRoom();
-  
-  unsubscribeRoom = listenToRoom(roomId, roomData => {
-    if (!roomData) {
-      handleOpponentLeft();
+// === GAME LOGIC ===
+
+function listen() {
+  if (unsub) unsub();
+  unsub = listenRoom(roomId, data => {
+    if (!data) {
+      alert('Соперник вышел');
+      cleanup();
       return;
     }
     
-    console.log('Room update:', roomData);
-    
-    // Check if opponent left (not us)
-    if (mySymbol === 'X' && roomData.guest?.presence === 'offline') {
-      // We are host, guest left
-      handleOpponentLeft();
-      return;
-    }
-    if (mySymbol === 'O' && roomData.host?.presence === 'offline') {
-      // We are guest, host left
-      handleOpponentLeft();
-      return;
-    }
-    
-    if (roomData.game) {
+    if (data.game) {
       const wasMyTurn = game.currentPlayer === mySymbol;
-      const prevMovesCount = game.moves.length;
-      
-      game = {
-        ...game,
-        moves: roomData.game.moves || [],
-        currentPlayer: roomData.game.currentPlayer || 'X',
-        winner: roomData.game.winner,
-        winLine: roomData.game.winLine
-      };
-      
-      const newMovesCount = game.moves.length;
-      if (newMovesCount > prevMovesCount && !wasMyTurn) {
-        hapticPlace();
+      game = { ...game, ...data.game };
+      if (data.game.moves?.length > (game.moves?.length || 0) && !wasMyTurn) {
+        haptic('medium');
       }
-      
-      renderBoard(game);
-      
-      if (game.winner && game.winner !== prevWinner) {
-        handleMultiplayerWin(game.winner);
-      }
+      render(game);
+      if (data.game.winner) handleWin(data.game.winner);
     }
   });
 }
 
-let prevWinner = null;
-
-function handleMultiplayerWin(winner) {
-  if (winner === mySymbol) {
-    hapticWin();
-  } else {
-    hapticLose();
+export function move(cell) {
+  if (mode === SINGLE) return false;
+  if (!isMyTurn() || game.winner) return false;
+  if (!isValidMove(game.moves, game.currentPlayer, cell)) return false;
+  
+  game = makeMove(game, cell);
+  
+  if (mode === TEST) {
+    haptic('medium');
+    render(game);
+    if (game.winner) handleWin(game.winner);
+    return true;
   }
-  
-  animateScoreUpdate(winner);
-  
-  setTimeout(() => {
-    const winText = winner === mySymbol ? 'Ты победил!' : 'Ты проиграл...';
-    showWinOverlay(winner, winText);
-  }, 500);
-  
-  prevWinner = winner;
-}
-
-function handleOpponentLeft() {
-  if (currentMode !== MODE_MULTI) return;
-  
-  cleanup();
-  
-  if (onModeChange) onModeChange(MODE_SINGLE, null);
-  
-  alert('Соперник покинул игру');
-}
-
-export function makeMove(cellIndex) {
-  if (currentMode === MODE_SINGLE) {
-    return false;
-  }
-  
-  if (currentMode === MODE_TEST) {
-    return makeTestMove(cellIndex);
-  }
-  
-  if (!isMyTurn()) return false;
-  if (game.winner) return false;
-  if (!isValidMove(game.moves, game.currentPlayer, cellIndex)) return false;
-  
-  game = baseMakeMove(game, cellIndex);
   
   updateGame(roomId, {
     moves: game.moves,
@@ -251,99 +131,42 @@ export function makeMove(cellIndex) {
     winLine: game.winLine
   });
   
-  hapticPlace();
-  renderBoard(game);
-  
-  if (game.winner) {
-    handleMultiplayerWin(game.winner);
-  }
-  
+  haptic('medium');
+  render(game);
+  if (game.winner) handleWin(game.winner);
   return true;
 }
 
-// Test mode - play both sides locally
-function makeTestMove(cellIndex) {
-  if (game.winner) return false;
-  if (!isValidMove(game.moves, game.currentPlayer, cellIndex)) return false;
-  
-  game = baseMakeMove(game, cellIndex);
-  hapticPlace();
-  renderBoard(game);
-  
-  if (game.winner) {
-    handleTestWin(game.winner);
-  }
-  
-  return true;
-}
-
-function handleTestWin(winner) {
-  hapticWin();
-  animateScoreUpdate(winner);
-  
+function handleWin(winner) {
+  haptic(winner === mySymbol ? 'win' : 'lose');
+  pulseScore(winner);
   setTimeout(() => {
-    showWinOverlay(winner, `${winner} победил!`);
-  }, 500);
-  
-  prevWinner = winner;
+    const text = mode === TEST ? `${winner} победил!` 
+      : winner === mySymbol ? 'Ты победил!' : 'Ты проиграл...';
+    showWin(winner, text);
+  }, 400);
 }
 
-export function restartTestGame() {
-  if (currentMode !== MODE_TEST) return;
-  
+export function restart() {
   game = resetGame(game);
-  hideWinOverlay();
-  renderBoard(game);
-}
-
-export function startTestMode() {
-  currentMode = MODE_TEST;
-  mySymbol = null;
-  game = createGame();
-  renderBoard(game);
+  hideWin();
+  render(game);
   
-  if (onModeChange) onModeChange(currentMode, null);
-  
-  return true;
-}
-
-export function restartMultiplayerGame() {
-  if (currentMode === MODE_TEST) {
-    restartTestGame();
-    return;
+  if (mode === MULTI) {
+    updateGame(roomId, { moves: [], currentPlayer: 'X', winner: null, winLine: null });
   }
-  
-  if (currentMode !== MODE_MULTI) return;
-  
-  game = resetGame(game);
-  hideWinOverlay();
-  
-  updateGame(roomId, {
-    moves: [],
-    currentPlayer: 'X',
-    winner: null,
-    winLine: null
-  });
-  
-  renderBoard(game);
 }
 
 export function cleanup() {
-  if (unsubscribeRoom) {
-    unsubscribeRoom();
-    unsubscribeRoom = null;
-  }
-  
-  if (roomId && currentMode !== MODE_TEST) {
-    leaveRoom(roomId);
-    roomId = null;
-  }
-  
-  currentMode = MODE_SINGLE;
+  if (unsub) { unsub(); unsub = null; }
+  if (roomId && mode !== TEST) { leaveRoom(roomId); roomId = null; }
+  mode = SINGLE;
   mySymbol = null;
-  prevWinner = null;
 }
 
-// ... rest of file
-
-export { MODE_SINGLE, MODE_MULTI, MODE_TEST };
+export async function quickMatch() {
+  if (!isReady()) return null;
+  const openId = await findOpenRoom();
+  if (openId) return join(openId) ? openId : null;
+  return create();
+}
