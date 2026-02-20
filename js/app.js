@@ -1,5 +1,5 @@
 import { createGame, makeMove, resetGame, isValidMove } from './game.js';
-import { init as initBoard, renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
+import { initBoard, renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
 import { init as initTg, getUser, haptic } from './telegram.js';
 import { getAiMove } from './ai.js';
 import { 
