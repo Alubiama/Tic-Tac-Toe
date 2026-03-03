@@ -1,8 +1,9 @@
 import { createGame, makeMove, resetGame, isValidMove } from './game.js';
 import { initBoard, renderBoard, showWinOverlay, hideWinOverlay, animateScoreUpdate } from './board.js';
-import { init as initTg, getUser, haptic } from './telegram.js';
+import { init as initTg, getUser, haptic, isTg } from './telegram.js';
 import { getAiMove } from './ai.js';
 import { initFirebase, isReady, createRoom, joinRoom, listenRoom, updateGame, leaveRoom, checkRoomExists } from './firebase.js';
+import { initYandexSDK, isYandex, showInterstitialAd, showRewardedAd, setLeaderboardScore, getPlayerName as getYaPlayerName, getPlayerUniqueID } from './yandex.js';
 
 let game = createGame();
 let aiThinking = false;
@@ -11,17 +12,47 @@ let mySymbol = null;
 let roomId = null;
 let myId = null;
 let unsub = null;
+let gamesPlayed = 0;
 
 console.log('App starting...');
 
-// Init Firebase
-initFirebase();
-const user = getUser();
-myId = user?.id?.toString() || 'guest_' + Math.random().toString(36).slice(2, 8);
+// Platform detection & init
+async function initApp() {
+  // Try Telegram first
+  try { initTg(); } catch (e) {}
 
-// Init board
-initBoard(handleClick);
-console.log('Board initialized');
+  // Try Yandex Games SDK
+  await initYandexSDK();
+
+  // Init Firebase (for multiplayer)
+  initFirebase();
+
+  // Determine player ID
+  if (isYandex() && getPlayerUniqueID()) {
+    myId = 'ya_' + getPlayerUniqueID();
+  } else {
+    const user = getUser();
+    myId = user?.id?.toString() || 'guest_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  // Init board
+  initBoard(handleClick);
+
+  // Adapt UI for platform
+  adaptUIForPlatform();
+
+  renderBoard(game);
+  updateUI();
+  console.log('App ready! Platform:', isYandex() ? 'Yandex Games' : isTg() ? 'Telegram' : 'Web');
+}
+
+function adaptUIForPlatform() {
+  // Update share button for Yandex Games
+  const shareBtn = document.getElementById('btn-copy-room');
+  if (shareBtn && isYandex()) {
+    shareBtn.textContent = '📋 Скопировать код';
+  }
+}
 
 function handleClick(idx) {
   if (mode === 'single') return vsBot(idx);
@@ -32,12 +63,12 @@ function handleClick(idx) {
 function vsBot(idx) {
   if (aiThinking || game.winner || game.currentPlayer !== 'X') return;
   if (!isValidMove(game.moves, 'X', idx)) return haptic('warn');
-  
+
   game = makeMove(game, idx);
   haptic('place');
   renderBoard(game);
   if (game.winner) return showWin(game.winner);
-  
+
   aiThinking = true;
   setTimeout(() => {
     const ai = getAiMove(game.moves, 'O');
@@ -62,28 +93,41 @@ function testMove(idx) {
 function multiMove(idx) {
   if (game.winner || game.currentPlayer !== mySymbol) return;
   if (!isValidMove(game.moves, game.currentPlayer, idx)) return;
-  
+
   game = makeMove(game, idx);
   haptic('place');
   renderBoard(game);
-  
+
   updateGame(roomId, {
     moves: game.moves,
     currentPlayer: game.currentPlayer,
     winner: game.winner,
     winLine: game.winLine
   });
-  
+
   if (game.winner) showWin(game.winner);
 }
 
 function showWin(w) {
   haptic(w === 'X' ? 'win' : 'lose');
   animateScoreUpdate(w);
+  gamesPlayed++;
+
+  // Update Yandex leaderboard
+  if (isYandex()) {
+    const totalWins = w === 'X' ? game.scoreX : game.scoreO;
+    setLeaderboardScore('wins', totalWins);
+  }
+
   setTimeout(() => showWinOverlay(w), 400);
 }
 
-function restart() {
+async function restart() {
+  // Show interstitial ad every 3 games on Yandex
+  if (isYandex() && gamesPlayed > 0 && gamesPlayed % 3 === 0) {
+    await showInterstitialAd();
+  }
+
   game = resetGame(game);
   hideWinOverlay();
   renderBoard(game);
@@ -91,17 +135,18 @@ function restart() {
 
 // === CREATE ROOM ===
 async function createGameRoom(customId) {
-  if (!isReady()) return alert('Firebase не работает');
-  
+  if (!isReady()) return alert('Firebase не подключён');
+
   if (customId && await checkRoomExists(customId)) {
     return alert('Код занят');
   }
-  
-  roomId = await createRoom(myId, user?.first_name || 'Player', customId);
+
+  const playerName = getYaPlayerName() || getUser()?.first_name || 'Player';
+  roomId = await createRoom(myId, playerName, customId);
   mySymbol = 'X';
   mode = 'multi';
   game = createGame();
-  
+
   unsub = listenRoom(roomId, data => {
     if (!data) {
       alert('Соперник вышел');
@@ -114,26 +159,27 @@ async function createGameRoom(customId) {
       if (game.winner) showWin(game.winner);
     }
   });
-  
+
   showRoomInfo(roomId);
 }
 
 // === JOIN ROOM ===
 async function joinGameRoom(id) {
-  if (!isReady()) return alert('Firebase не работает');
-  
-  const res = await joinRoom(id, myId, user?.first_name || 'Player');
-  
+  if (!isReady()) return alert('Firebase не подключён');
+
+  const playerName = getYaPlayerName() || getUser()?.first_name || 'Player';
+  const res = await joinRoom(id, myId, playerName);
+
   if (!res.ok) {
     const msgs = { not_found: 'Комната не найдена', full: 'Комната занята', own_room: 'Это твоя комната' };
     return alert(msgs[res.error] || 'Ошибка');
   }
-  
+
   roomId = id;
   mySymbol = 'O';
   mode = 'multi';
   game = createGame();
-  
+
   unsub = listenRoom(roomId, data => {
     if (!data) {
       alert('Соперник вышел');
@@ -146,7 +192,7 @@ async function joinGameRoom(id) {
       if (game.winner) showWin(game.winner);
     }
   });
-  
+
   updateUI();
 }
 
@@ -207,9 +253,19 @@ document.getElementById('btn-join-confirm').onclick = async () => {
 };
 
 document.getElementById('btn-copy-room').onclick = () => {
-  const link = `https://t.me/InfTicTacToeBot?startapp=game_${roomId}`;
-  const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Играй со мной!')}`;
-  window.Telegram?.WebApp?.openTelegramLink(url);
+  if (isYandex()) {
+    // On Yandex Games — copy room code to clipboard
+    navigator.clipboard?.writeText(roomId).then(() => {
+      const btn = document.getElementById('btn-copy-room');
+      btn.textContent = '✅ Скопировано!';
+      setTimeout(() => { btn.textContent = '📋 Скопировать код'; }, 2000);
+    });
+  } else {
+    // On Telegram — share via Telegram link
+    const link = `https://t.me/InfTicTacToeBot?startapp=game_${roomId}`;
+    const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Играй со мной!')}`;
+    window.Telegram?.WebApp?.openTelegramLink(url);
+  }
   haptic('tap');
 };
 
@@ -243,16 +299,16 @@ function updateUI() {
   const singleBtn = document.getElementById('btn-mode-single');
   const multiBtn = document.getElementById('btn-mode-multi');
   const status = document.getElementById('status');
-  
+
   singleBtn.classList.toggle('active', mode === 'single');
   multiBtn.classList.toggle('active', mode !== 'single');
-  
+
   if (mode === 'single') {
     status.innerHTML = `Ход: <span id="turn-indicator" class="turn-${game.currentPlayer.toLowerCase()}">${game.currentPlayer}</span>`;
   } else if (mode === 'test') {
     status.innerHTML = `<span class="my-turn">🧪 Тест: ${game.currentPlayer}</span>`;
   } else {
-    status.innerHTML = mySymbol === 'X' 
+    status.innerHTML = mySymbol === 'X'
       ? `<span class="my-turn">Твой ход (X)</span>`
       : `<span class="opponent-turn">Ход соперника...</span>`;
   }
@@ -261,9 +317,5 @@ function updateUI() {
 function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
 function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
 
-// Init
-try { initTg(); } catch (e) {}
-
-renderBoard(game);
-updateUI();
-console.log('App ready!');
+// Start the app
+initApp();
