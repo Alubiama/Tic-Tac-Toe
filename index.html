@@ -16,10 +16,16 @@
   <div id="app">
     <!-- Header -->
     <div class="header-section">
-      <div class="app-title">Infinite Tic-Tac-Toe</div>
-      
+      <div class="header-top">
+        <div class="app-title">Infinite Tic-Tac-Toe</div>
+        <div class="header-buttons">
+          <button id="btn-rules" class="icon-btn" aria-label="Правила">?</button>
+          <button id="btn-sound" class="icon-btn" aria-label="Звук">&#x1f50a;</button>
+        </div>
+      </div>
+
       <div class="mode-selector">
-        <button id="btn-mode-single" class="mode-btn active">С бот</button>
+        <button id="btn-mode-single" class="mode-btn active">С ботом</button>
         <button id="btn-mode-multi" class="mode-btn">Онлайн</button>
       </div>
     </div>
@@ -165,6 +171,47 @@
     <div class="modal-content modal-loading">
       <div class="spinner"></div>
       <p id="loading-text" class="loading-text">Поиск соперника...</p>
+    </div>
+  </div>
+
+  <!-- Rules Modal -->
+  <div id="modal-rules" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Как играть</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body rules-body">
+        <div class="rule-item">
+          <div class="rule-icon">&#x1f3af;</div>
+          <div class="rule-text">
+            <strong>Цель</strong>
+            <p>Собери 3 в ряд по горизонтали, вертикали или диагонали</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon">&#x267b;&#xfe0f;</div>
+          <div class="rule-text">
+            <strong>Бесконечная механика</strong>
+            <p>У каждого игрока максимум <b>3 фигуры</b> на поле. Когда ставишь 4-ю — самая старая исчезает!</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon">&#x1f4a1;</div>
+          <div class="rule-text">
+            <strong>Подсказки</strong>
+            <p>Мигающая фигура — следующая на удаление. Подсвеченные клетки — угрозы</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon">&#x1f3ae;</div>
+          <div class="rule-text">
+            <strong>Режимы</strong>
+            <p><b>С ботом</b> — играй против ИИ<br><b>Онлайн</b> — играй с друзьями</p>
+          </div>
+        </div>
+        <button id="btn-rules-ok" class="btn-primary btn-block">Понятно!</button>
+      </div>
     </div>
   </div>
 

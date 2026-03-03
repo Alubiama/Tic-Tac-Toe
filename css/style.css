@@ -56,12 +56,52 @@ html, body {
   margin-bottom: 8px;
 }
 
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
 .app-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 1.5px;
+}
+
+.header-buttons {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--hint);
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+}
+
+.icon-btn.muted {
+  opacity: 0.4;
 }
 
 /* Mode Selector - Segmented Control */
@@ -583,4 +623,90 @@ html, body {
   border: none;
   border-radius: 14px;
   cursor: pointer;
+}
+
+/* Rules Modal */
+.rules-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rule-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.rule-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.rule-text strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.rule-text p {
+  font-size: 14px;
+  color: var(--hint);
+  line-height: 1.4;
+}
+
+.rules-body .btn-block {
+  margin-top: 8px;
+}
+
+/* === Desktop Layout === */
+@media (min-width: 600px) {
+  :root {
+    --cell-size: 110px;
+    --gap: 10px;
+  }
+
+  #app {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-top: 24px;
+  }
+
+  .app-title {
+    font-size: 15px;
+  }
+
+  .board {
+    padding: 20px;
+  }
+
+  .cell .piece {
+    font-size: calc(var(--cell-size) * 0.5);
+  }
+
+  .cell:hover {
+    background: var(--separator);
+  }
+
+  .cell.disabled:hover {
+    background: var(--bg);
+  }
+
+  .modal {
+    align-items: center;
+  }
+
+  .modal-content {
+    border-radius: 20px;
+    max-width: 440px;
+  }
+}
+
+@media (min-width: 900px) {
+  :root {
+    --cell-size: 120px;
+  }
 }
